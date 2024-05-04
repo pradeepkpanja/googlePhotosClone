@@ -2,10 +2,10 @@
 
 import {  useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquareDashedBottom, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquareDashedBottom, Square, RectangleHorizontal, RectangleVertical, Circle, Router } from 'lucide-react';
 import {  CldImageProps,getCldImageUrl } from 'next-cloudinary';
 import { CloudinaryResource } from '@/types/cloudinary';
-
+import { useRouter } from 'next/navigation';
 
 import Container from '@/components/Container';
 import CldImage from '@/components/CldImage';
@@ -16,6 +16,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { POST } from '@/app/api/sign-cloudinary-params/route';
+import { Close } from '@radix-ui/react-dialog';
+import { json } from 'stream/consumers';
 
 
 
@@ -24,6 +26,7 @@ interface Deletion {
 }
 
 const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
+  const router = useRouter();
   const sheetFiltersRef = useRef<HTMLDivElement | null>(null);
   const sheetInfoRef = useRef<HTMLDivElement | null>(null);
 
@@ -80,6 +83,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
     transformations.art = filter;
   }
 
+   const hasTransformations =  Object.entries(transformations).length > 0
   // Canvas sizing based on the image dimensions. The tricky thing about
   // showing a single image in a space like this in a responsive way is trying
   // to take up as much room as possible without distorting it or upscaling
@@ -136,7 +140,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
    * handleOnSaveChange
    */
 
-    async function handleOnSave(){
+  async function handleOnSave(){
     const url = getCldImageUrl({
       width:resource.width,
       height:resource.height,
@@ -160,6 +164,32 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
     discardChanges();
     setVersion(Date.now())
   }
+
+
+    /**
+   * handleOnSaveCopy
+   */
+
+    async function handleOnSaveCopy(){
+      const url = getCldImageUrl({
+        width:resource.width,
+        height:resource.height,
+        src:resource.public_id,
+        format:'default',
+        quality:'default',
+        ...transformations
+      })
+  
+      await fetch(url);
+  
+      const {data} = await fetch('/api/upload',{
+        method:'POST',
+        body: JSON.stringify({
+          url
+        })
+      }).then(r => r.json())
+      router.push(`/resources/${data.asset_id}`)
+    }
 
   // Listen for clicks outside of the panel area and if determined
   // to be outside, close the panel. This is marked by using
@@ -185,7 +215,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
   return (
     <div className="h-screen bg-black px-0">
 
-      {/** Modal for deletion */}
+      {/* Modal for deletion */}
 
       <Dialog open={!!deletion?.state} onOpenChange={handleOnDeletionOpenChange}>
         <DialogContent data-exclude-close-on-click={true}>
@@ -273,7 +303,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
                   <Button variant="ghost" 
                   className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${!crop ? 'border-white' : 'border-transparent'}`}
                   onClick={()=>setCrop(undefined)}>
-                    <Image className="w-5 h-5 mr-3" />
+                    <Circle className="w-5 h-5 mr-3" />
                     <span className="text-[1.01rem]">Original</span>
                   </Button>
                 </li>
@@ -364,6 +394,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
             </TabsContent>
           </Tabs>
           <SheetFooter className="gap-2 sm:flex-col">
+            {hasTransformations && (
             <div className="grid grid-cols-[1fr_4rem] gap-2">
               <Button
                 variant="ghost"
@@ -386,20 +417,21 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" data-exclude-close-on-click={true}>
                   <DropdownMenuGroup>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleOnSaveCopy}>
                       <span>Save as Copy</span>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            )}
             <Button
               variant="outline"
-              className="w-full h-14 text-left justify-center items-center bg-transparent border-zinc-600"
-              onClick={() => closeMenus()}
+              className={`w-full h-14 text-left justify-center items-center ${hasTransformations ? 'bg-red-500':'bg-transparent'} border-zinc-600`}
+              onClick={() => {closeMenus();discardChanges();}}
             >
               <span className="text-[1.01rem]">
-                Close
+                {hasTransformations ? 'Cancel' : 'Close'}
               </span>
             </Button>
           </SheetFooter>
