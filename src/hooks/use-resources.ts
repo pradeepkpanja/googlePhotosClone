@@ -37,7 +37,8 @@ export function useResources(options?: UseResources){
     }
 
     return {
-        resources,addResources
+        resources,
+        addResources
     }
     
 }

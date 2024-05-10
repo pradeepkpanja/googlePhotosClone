@@ -2,10 +2,11 @@
 
 import {  useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquareDashedBottom, Square, RectangleHorizontal, RectangleVertical, Circle, Router } from 'lucide-react';
+import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquareDashedBottom, Square, RectangleHorizontal, RectangleVertical, Circle, Router, Loader2 } from 'lucide-react';
 import {  CldImageProps,getCldImageUrl } from 'next-cloudinary';
 import { CloudinaryResource } from '@/types/cloudinary';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Container from '@/components/Container';
 import CldImage from '@/components/CldImage';
@@ -26,6 +27,7 @@ interface Deletion {
 }
 
 const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
+  const queryClient = useQueryClient();
   const router = useRouter();
   const sheetFiltersRef = useRef<HTMLDivElement | null>(null);
   const sheetInfoRef = useRef<HTMLDivElement | null>(null);
@@ -137,7 +139,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
   }
 
     /**
-   * handleOnSaveChange
+   * handleOnSave
    */
 
   async function handleOnSave(){
@@ -159,10 +161,13 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
         url
       })
     })
-  
+    
     closeMenus();
     discardChanges();
     setVersion(Date.now())
+    invalidateQueries()
+    console.log('Save is working')
+    
   }
 
 
@@ -188,7 +193,32 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
           url
         })
       }).then(r => r.json())
+      invalidateQueries()
       router.push(`/resources/${data.asset_id}`)
+    }
+
+    async function handleOnDelete(){
+      if(deletion?.state === 'deleting'){
+        return;
+      }
+
+      setDeletion({
+        state: 'deleting'
+      })
+      await fetch('/api/delete',{
+        method: 'POST',
+        body: JSON.stringify({
+          publicId: resource.public_id
+        })
+      })
+      invalidateQueries()
+      router.push('/');
+    }
+
+    function invalidateQueries(){
+      queryClient.invalidateQueries({
+        queryKey: ['resources',String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
+    })
     }
 
   // Listen for clicks outside of the panel area and if determined
@@ -201,7 +231,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
     return () => {
       document.body.removeEventListener('click', handleOnOutsideClick)
     }
-  }, []);
+  }, );
 
   function handleOnOutsideClick(event: MouseEvent) {
     const excludedElements = Array.from(document.querySelectorAll('[data-exclude-close-on-click="true"]'));
@@ -217,14 +247,20 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
 
       {/* Modal for deletion */}
 
-      <Dialog open={!!deletion?.state} onOpenChange={handleOnDeletionOpenChange}>
+      <Dialog open={deletion && ['confirm','deleting'].includes(deletion.state)} onOpenChange={handleOnDeletionOpenChange}>
         <DialogContent data-exclude-close-on-click={true}>
           <DialogHeader>
             <DialogTitle className="text-center">Are you sure you want to delete?</DialogTitle>
           </DialogHeader>
           <DialogFooter className="justify-center sm:justify-center">
-            <Button variant="destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> Delete
+            <Button variant="destructive" onClick={handleOnDelete}>
+              {deletion?.state === 'deleting' && (
+                 <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
+              ) }
+              {deletion?.state != 'deleting' && (
+                <Trash2 className="h-4 w-4 mr-2" /> 
+              ) }
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>

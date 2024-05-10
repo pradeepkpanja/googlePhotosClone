@@ -7,25 +7,10 @@ cloudinary.config({
 });
 
 export async function POST(request: Request) {
-  const { url, publicId } = await request.json();
+  const { publicId } = await request.json();
 
-  const uploadOptions: Record<string, string | boolean | Array<string>> = {};
-
-  if (typeof publicId === 'string') {
-      uploadOptions.public_id = publicId;
-      uploadOptions.invalidate = true;
-  } else {
-      uploadOptions.tags = [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)];
-  }
-
-  const results = await cloudinary.uploader.upload(url, uploadOptions);
-
-  const response = new Response(JSON.stringify({ data: results }), {
-      headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, max-age=0', // Add cache-control headers
-      },
+  const results = await cloudinary.api.delete_resources([publicId])
+  return Response.json({
+    data: results
   });
-
-  return response;
 }
