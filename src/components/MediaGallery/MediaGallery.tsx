@@ -3,11 +3,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, X, Save } from 'lucide-react';
-import { CldImage } from 'next-cloudinary';
-import { useQuery } from '@tanstack/react-query';
+import { Plus, X, Save, Loader2 } from 'lucide-react';
+import { getAnimation, getCollage } from '@/lib/creations';
 
 import Container from '@/components/Container';
+import CldImage from '@/components/CldImage';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -21,16 +21,22 @@ interface MediaGalleryProps {
   tag?: string;
 }
 
+interface Creation{
+  state: string;
+  url:string;
+  type: string;
+}
+
 const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) => {
 
-  const {resources} = useResources({
+  const {resources,addResources} = useResources({
     initialResources,
     tag,
   });
 
 
   const [selected, setSelected] = useState<Array<string>>([]);
-  const [creation, setCreation] = useState();
+  const [creation, setCreation] = useState<Creation>();
 
   /**
    * handleOnClearSelection
@@ -50,6 +56,78 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
     }
   }
 
+    /**
+   * handleOnCreateCollage
+   */
+  function handleOnCreateCollage(){
+
+   console.log('selected',selected)
+    setCreation({
+      state: 'created',
+      url: getCollage(selected),
+      type: 'collage'
+    })
+  }
+
+  // handleOnSaveCreation
+
+  async function handleOnSaveCreation(){
+    if(typeof creation?.url !== 'string' || creation?.state === 'saving'){
+      return;
+    }
+
+    setCreation((prev)=>{
+      if (!prev) return;
+      return{
+        ...prev,
+        state:'saving'
+      }
+    })
+
+    await fetch(creation.url);
+  
+    const {data} = await fetch('/api/upload',{
+      method:'POST',
+      body: JSON.stringify({
+        url: creation.url
+      })
+    }).then(r => r.json())
+
+    addResources([data]);
+    setCreation(undefined);
+    setSelected([]);
+    console.log(data)
+  }
+
+  //handleOnCreateAnimation
+
+  function handleOnCreateAnimation(){
+    console.log('selected',selected)
+    setCreation({
+      state: 'created',
+      url: getAnimation(selected),
+      type: 'animation'
+    })
+  }
+
+  //handleOnCreateColorPop
+
+  async function handleOnCreateColorPop(){
+
+   const { url } = await fetch('/api/creations/color-pop',{
+      method: 'POST',
+      body: JSON.stringify({
+        publicId: selected[0]
+      })
+   }).then(r =>r.json())
+
+    setCreation({
+      state: 'created',
+      url,
+      type: 'color-pop'
+    })
+  }
+
   return (
     <>
       {/** Popup modal used to preview and confirm new creations */}
@@ -59,9 +137,30 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
           <DialogHeader>
             <DialogTitle>Save your creation?</DialogTitle>
           </DialogHeader>
+          {creation?.url && (
+            <div>
+              <CldImage
+                width={1200}
+                height={1200}
+                crop={{
+                  type: 'fill',
+                  source: true
+                }}
+                src={creation.url}
+                alt='Creation'
+                preserveTransformations
+              />
+            </div>
+          )}
           <DialogFooter className="justify-end sm:justify-end">
-            <Button>
+            <Button
+            onClick={handleOnSaveCreation}>
+              {creation?.state === 'saving' &&(
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+               {creation?.state !== 'saving' &&(
               <Save className="h-4 w-4 mr-2" />
+              )}
               Save to Library
             </Button>
           </DialogFooter>
@@ -96,9 +195,24 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                   <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                      <span>Option</span>
+                  {selected.length === 1 && (
+                    <DropdownMenuItem
+                    onClick={handleOnCreateAnimation}>
+                      <span>Animation</span>
                     </DropdownMenuItem>
+                  )}
+                   {selected.length === 1 && (
+                    <DropdownMenuItem
+                    onClick={handleOnCreateColorPop}>
+                      <span>Color Pop</span>
+                    </DropdownMenuItem>
+                  )}
+                   {selected.length > 1 && (
+                    <DropdownMenuItem
+                    onClick={handleOnCreateCollage}>
+                      <span>Collage</span>
+                    </DropdownMenuItem>
+                  )}
                   </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>

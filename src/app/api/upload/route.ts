@@ -19,12 +19,8 @@ export async function POST(request : Request){
       uploadOptions.tags = [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
     }
     const results = await cloudinary.uploader.upload(url, uploadOptions);
-    const response = new Response(JSON.stringify({ data: results }), {
-      headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, max-age=0', // Add cache-control headers
-      },
-  });
-
-  return response;
+    
+    return Response.json({
+      data:results
+    })
 }

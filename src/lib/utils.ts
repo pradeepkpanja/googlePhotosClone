@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * addCommas
- * @via Thanks ChatGPT
  */
 
 export function addCommas(number: number | string) {

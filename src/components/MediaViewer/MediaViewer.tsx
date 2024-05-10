@@ -1,5 +1,5 @@
 'use client';
-
+import { formatBytes , addCommas } from '@/lib/utils';
 import {  useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquareDashedBottom, Square, RectangleHorizontal, RectangleVertical, Circle, Router, Loader2 } from 'lucide-react';
@@ -158,14 +158,14 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
       method:'POST',
       body: JSON.stringify({
         publicId: resource.public_id,
-        url
+        url,
       })
     })
-    
+
+    invalidateQueries()
     closeMenus();
     discardChanges();
     setVersion(Date.now())
-    invalidateQueries()
     console.log('Save is working')
     
   }
@@ -193,6 +193,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
           url
         })
       }).then(r => r.json())
+      
       invalidateQueries()
       router.push(`/resources/${data.asset_id}`)
     }
@@ -491,6 +492,42 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
                 <strong className="block text-xs font-normal text-zinc-400 mb-1">ID</strong>
                 <span className="flex gap-4 items-center text-zinc-100">
                   { resource.public_id }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">Date Created</strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { new Date(resource.created_at).toLocaleString() }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">Width</strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { addCommas(resource.width) }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">Height</strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { addCommas(resource.height) }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">Format</strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { resource.format }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">Size</strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { formatBytes(resource.bytes) } 
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">Tags</strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { resource.tags.join(', ') }
                 </span>
               </li>
             </ul>
