@@ -19,18 +19,46 @@ export async function POST(request : Request){
       version: Date.now()
     })
 
+    async function checkStatus(url : string) {
+      const response = await fetch(url);
 
-    // const uploadOptions: Record<string , string | boolean | Array<string>> = {};
+      if(response.ok){
+        return true;
+      }
 
-    // if (typeof publicId === 'string'){
-    //   uploadOptions.public_id = publicId;
-    //   uploadOptions.invalidate = true;
-    // }else{
-    //   uploadOptions.tags = [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
-    // }
-    // const results = await cloudinary.uploader.upload(url,uploadOptions);
+      await new Promise((resolve)=>{
+        setTimeout(()=>{
+          resolve(undefined);
+        },500)
+      });
+      return await checkStatus(url);
+    }
 
-  return ({
-    url: backgroundRemovedUrl
+    await checkStatus(backgroundRemovedUrl);
+
+    const uploadOptions: Record<string , string | boolean | Array<string>> = {};
+
+    uploadOptions.tags = ['background-removed', `original - ${publicId}`]
+    
+    const results = await cloudinary.uploader.upload(backgroundRemovedUrl,uploadOptions);
+
+    const creationUrl = getCldImageUrl({
+      width: 1200,
+      height: 1200,
+      src: publicId,
+      crop: {
+        type: 'fill',
+        source:true,
+        gravity: 'center'
+      },
+      grayscale: true,
+      overlays: [{
+        publicId: results.public_id
+      }],
+      version: Date.now()
+    })
+
+  return Response.json({
+    url: creationUrl
   });
 }

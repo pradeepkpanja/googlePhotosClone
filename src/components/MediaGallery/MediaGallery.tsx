@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, X, Save, Loader2 } from 'lucide-react';
+import { Plus, X, Save, Loader2, SquareStack, Droplet, LayoutPanelLeft } from 'lucide-react';
 import { getAnimation, getCollage } from '@/lib/creations';
 
 import Container from '@/components/Container';
@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { CloudinaryResource } from '@/types/cloudinary';
 import { useResources } from '@/hooks/use-resources';
+import { create } from 'domain';
 
 
 interface MediaGalleryProps {
@@ -23,7 +24,7 @@ interface MediaGalleryProps {
 
 interface Creation{
   state: string;
-  url:string;
+  url?:string;
   type: string;
 }
 
@@ -89,7 +90,8 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
     const {data} = await fetch('/api/upload',{
       method:'POST',
       body: JSON.stringify({
-        url: creation.url
+        url: creation.url,
+        tags: [String(process.env.NEXT_PUBLIC_CLOUDINARY_CREATIONS_TAG)]
       })
     }).then(r => r.json())
 
@@ -114,6 +116,12 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
 
   async function handleOnCreateColorPop(){
 
+    setCreation({
+      state: 'creating',
+      url: undefined,
+      type: 'color-pop'
+    })
+
    const { url } = await fetch('/api/creations/color-pop',{
       method: 'POST',
       body: JSON.stringify({
@@ -134,6 +142,13 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
 
       <Dialog open={!!creation} onOpenChange={handleOnCreationOpenChange}>
         <DialogContent>
+        {creation?.state && ['creating'].includes(creation?.state) && (
+          <div className='flex items-center justify-center p-12'>
+           <Loader2 className="h-12 w-12 mr-2 animate-spin" />
+           </div>
+        )}
+        {creation?.state && ['created','saving'].includes(creation?.state) && (
+       <>
           <DialogHeader>
             <DialogTitle>Save your creation?</DialogTitle>
           </DialogHeader>
@@ -164,6 +179,8 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
               Save to Library
             </Button>
           </DialogFooter>
+          </>
+        )}
         </DialogContent>
       </Dialog>
 
@@ -198,18 +215,21 @@ const MediaGallery = ({ resources : initialResources, tag }: MediaGalleryProps) 
                   {selected.length === 1 && (
                     <DropdownMenuItem
                     onClick={handleOnCreateAnimation}>
+                      <SquareStack className='w-4 h-4 mr-2'/>
                       <span>Animation</span>
                     </DropdownMenuItem>
                   )}
                    {selected.length === 1 && (
                     <DropdownMenuItem
                     onClick={handleOnCreateColorPop}>
+                       <Droplet className='w-4 h-4 mr-2'/>
                       <span>Color Pop</span>
                     </DropdownMenuItem>
                   )}
                    {selected.length > 1 && (
                     <DropdownMenuItem
                     onClick={handleOnCreateCollage}>
+                       <LayoutPanelLeft className='w-4 h-4 mr-2'/>
                       <span>Collage</span>
                     </DropdownMenuItem>
                   )}

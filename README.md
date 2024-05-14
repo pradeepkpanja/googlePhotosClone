@@ -4,16 +4,4 @@ Hey people 👋 this is your starting point for digging into building your own P
 
 ## 🚀 Getting Started
 
-#Run cmd and type the below
- npm i or npm install
- 
-# Make a file named .env.local in the root folder and type your cloudinary api details with below keys:
-NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME = *******
-NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG = *******
-CLOUDINARY_API_SECRET = *******
-NEXT_PUBLIC_CLOUDINARY_API_KEY = *******
-
-
-
-
 

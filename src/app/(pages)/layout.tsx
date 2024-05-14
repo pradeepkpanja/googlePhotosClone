@@ -1,5 +1,5 @@
 import '@/app/globals.css';
-import { Image } from 'lucide-react'
+import { Image, Images, Sparkles } from 'lucide-react'
 
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
@@ -18,9 +18,14 @@ export default function RootLayout({
           <SidebarLinks
             links={[
               {
-                icon: <Image className="w-5 h-5" />,
+                icon: <Images className="w-5 h-5" />,
                 label: 'Photos',
                 path: '/'
+              },
+              {
+                icon: <Sparkles className="w-5 h-5" />,
+                label: 'Creations',
+                path: '/creations'
               }
             ]}
           />
